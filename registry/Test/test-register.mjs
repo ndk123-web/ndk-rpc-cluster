@@ -1,6 +1,6 @@
-import Register from "../index.mjs";
+import GlobalRegister from "../index.mjs";
 
-const globalRegister = new Register({
+const globalRegister = new GlobalRegister({
     registryPort: 3004
 });
 

@@ -1,14 +1,14 @@
 class Client {
-  registry_port = "";
+  #registry_port = "";
 
   constructor() {
-    this.registry_port = 3000;
+    this.#registry_port = 4132;
   }
 
   async request({ method, params, key }) {
     try {
       const server_response = await fetch(
-        `http://localhost:${this.registry_port}/api/v1/run-registry/`,
+        `http://localhost:${this.#registry_port}/api/v1/`,
         {
           method: "POST",
           headers: {

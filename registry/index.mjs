@@ -4,6 +4,7 @@ import app from "./app/index.mjs";
 import chalk from "chalk";
 import os from 'os'
 import figlet from "figlet";
+import { globalRegisterRouter } from "./routes/globalRegisterRouter.mjs";
 
 function getAllIPv4() {
     const nets = os.networkInterfaces();
@@ -21,16 +22,34 @@ function getAllIPv4() {
     return results;
 }
 
-class Register {
+class GlobalRegister {
     globalRegistry = {};
     registryPort = undefined;
     registryHost = "localhost"
 
-    constructor({ registryPort = 3000 }) {
+    constructor({ registryPort = 3331 }) {
         this.registryPort = registryPort;
+
+        app.use("/api/v1/get-registry-data", (req, _, next) => {
+            req.globalRegistry = this.globalRegistry
+            next();
+        }, globalRegisterRouter);
     }
 
     // Register multiple services
+    // Schema is like 
+    /*
+        {
+            AddService: {
+                host: "localhost",
+                port: 3000
+            },
+            SubService: {
+                host: "localhost",`
+                port: 3001
+            }
+        }
+     */
     async registerKeys(services) {
 
         if (typeof services !== "object" || Array.isArray(services)) {
@@ -89,4 +108,4 @@ class Register {
     }
 }
 
-export default Register;
+export default GlobalRegister;

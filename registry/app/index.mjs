@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import ApiError from "../utils/ApiError.js";
-import rpc_router from "../routes/rpc-router.mjs";
+import globalRegisterRouter from "../routes/globalRegisterRouter.mjs";
 
 const app = express();
 
@@ -23,8 +23,6 @@ app.use((err, req, res, next) => {
   }
   return res.status(500).json(new ApiResponse(500, "Internal Server Error"));
 });
-
-app.use("/api/v1/run-registry", rpc_router);
 
 app.get("/", (req, res) => {
   res.send("NDK-RPC-Engine is running");

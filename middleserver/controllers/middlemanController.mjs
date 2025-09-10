@@ -1,24 +1,34 @@
 import ApiResponse from "../../utils/ApiResponse.js";
 
 const MiddlemanController = async (req, res) => {
-    const { method, params, key } = req.body
-    if (!method || !params || !key) {
+    const { method: serverMethod , params: serverParams, key } = req.body
+    if (!serverMethod || !serverParams || !key) {
         res.status(400).json(new ApiResponse(400, "All Method/params/key is required"))
     }
 
     const { registryHost, registryPort } = req.registryData;
 
-    const registryResponse = await fetch(`http://${registryHost}:${registryPort}/api/v1/get-registry`, {
+    const registryResponse = await fetch(`http://${registryHost}:${registryPort}/api/v1/get-registry-data`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ key, method, params }),
+        body: JSON.stringify({ key, method: serverMethod, params: serverParams }),
     })
 
-    const responseData = await registryResponse.json();
-    let { data, message } = responseData;
-    return res.status(200).json(new ApiResponse(200, "Method executed successfully", { method_name, result }));
+    console.log("Registry Response: ", registryResponse)
+
+    const { host, port, method, params } = registryResponse.data;
+
+    const serverResponse = await fetch(`http://${host}:${port}/api/v1/run-rpc-method`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ method, params }),
+    })
+
+    return res.status(200).json(new ApiResponse(200, "Method executed successfully", { serverResponse }));
 }
 
 export { MiddlemanController }
