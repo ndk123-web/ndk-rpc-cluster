@@ -24,7 +24,7 @@ app.use((err, req, res, next) => {
   return res.status(500).json(new ApiResponse(500, "Internal Server Error"));
 });
 
-app.use("/api/v1/rpc", rpc_router);
+app.use("/api/v1/run-registry", rpc_router);
 
 app.get("/", (req, res) => {
   res.send("NDK-RPC-Engine is running");

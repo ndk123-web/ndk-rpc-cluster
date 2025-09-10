@@ -1,8 +1,7 @@
 import { randomBytes } from "crypto";
-import ApiError from "../utils/ApiError.js";
-import ApiResponse from "../utils/ApiResponse.js";
+import ApiError from "../../utils/ApiError.js";
+import ApiResponse from "../../utils/ApiResponse.js";
 import chalk from "chalk";
-import figlet from "figlet";
 
 const GiveAuthCode = async (req, res) => {
   try {
@@ -68,10 +67,10 @@ const RunRpcMethod = async (req, res) => {
     // Inside RunRpcMethod after execution
     console.log(
       chalk.yellowBright("⚡ Method: ") +
-        chalk.white(method_name) +
-        " " +
-        chalk.greenBright("→ Result: ") +
-        chalk.white(result)
+      chalk.white(method_name) +
+      " " +
+      chalk.greenBright("→ Result: ") +
+      chalk.white(result)
     );
     res.status(200).json(response);
   } catch (err) {

@@ -12,14 +12,29 @@
     "test:client": "node client/test/test_client.mjs",
     "example": "node Test/test_server.mjs",
     "start": "node Test/test_server1.mjs",
-    "start2":"node Test/test_server2.mjs"
+    "start2": "node Test/test_server2.mjs",
+    "register": "node registry/Test/test-register.mjs",
+    "middle": "node middleserver/Test/test_middleserver.mjs"
   },
   "files": [
-  "client",
-  "server",
-  "README.md"
-],
-  "keywords": ["rpc", "engine", "nodejs", "client", "server", "ndk", "remote-procedure-call", "api", "microservices", "express"],
+    "client",
+    "server",
+    "registry",
+    "middleserver",
+    "README.md"
+  ],
+  "keywords": [
+    "rpc",
+    "engine",
+    "nodejs",
+    "client",
+    "server",
+    "ndk",
+    "remote-procedure-call",
+    "api",
+    "microservices",
+    "express"
+  ],
   "author": "Navnath kadam",
   "license": "MIT",
   "repository": {

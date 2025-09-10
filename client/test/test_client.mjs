@@ -1,12 +1,11 @@
 import { Client } from "../index.mjs";
 
-const client = new Client({
-    server_port: 5000 
-})
+const client = new Client()
 
 const response = await client.request({
-     method : "subtract",
-     params: { a: 5 , b: 4 }  // Array format as expected by server
+    method: "add",
+    params: { a: 5, b: 4 },  // Array format as expected by server
+    key: "AddService"
 })
 
-console.log("Response from server to Client : " , response);
+console.log("Response from server to Client : ", response);
