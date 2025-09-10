@@ -129,7 +129,7 @@ class ndk_rpc_server {
         this.rpc_methods.push(obj);
         // Also add to global registry for controller access
         globalRpcRegistry.methods.push(obj);
-        // console.log(`Global Registered function: ${globalRpcRegistry}`);
+        console.log(`Global Registered function: ${JSON.stringify(this.rpc_methods)}`);
       }
 
       //   console.log("Registered functions:", this.rpc_methods);

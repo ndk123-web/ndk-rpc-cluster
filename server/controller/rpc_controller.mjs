@@ -22,31 +22,31 @@ const GiveAuthCode = async (req, res) => {
 const RunRpcMethod = async (req, res) => {
   try {
     // console.log("RPC GLOBAL REGISTRY: " , rpc_methods);
-    const { method_name, params } = req.body;
+    const { method, params } = req.body;
     const rpc_methods = req.rpc_methods;
     // console.log("RPC METHODS IN REQ: " , rpc_methods);
     // Check for valid auth code
 
     // Validate required fields
-    if (!method_name) {
+    if (!method) {
       return res
         .status(400)
-        .json(new ApiResponse(400, "method_name is required"));
+        .json(new ApiResponse(400, "method is required"));
     }
 
     // Find the requested method
     const methodObj = rpc_methods.find(
-      (method) => method.function_name === method_name
+      (m) => m.function_name === method
     );
 
     if (!methodObj) {
       console.log(
-        chalk.red("   Method not found: ") + chalk.white(method_name)
+        chalk.red("   Method not found: ") + chalk.white(method)
       );
       // console.log("Method not found: ", method_name);
       return res
         .status(404)
-        .json(new ApiResponse(404, `Method '${method_name}' not found`));
+        .json(new ApiResponse(404, `Method '${method}' not found`));
     }
 
     // Execute the method with provided parameters
@@ -60,14 +60,14 @@ const RunRpcMethod = async (req, res) => {
     }
 
     const response = new ApiResponse(200, "Method executed successfully", {
-      method_name,
+      method,
       result,
     });
 
     // Inside RunRpcMethod after execution
     console.log(
       chalk.yellowBright("⚡ Method: ") +
-      chalk.white(method_name) +
+      chalk.white(method) +
       " " +
       chalk.greenBright("→ Result: ") +
       chalk.white(result)

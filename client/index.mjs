@@ -1,22 +1,25 @@
 class Client {
-  #registry_port = "";
+  #middleServerPort = "";
 
   constructor() {
-    this.#registry_port = 4132;
+    this.#middleServerPort = 4132;
   }
 
   async request({ method, params, key }) {
     try {
       const server_response = await fetch(
-        `http://localhost:${this.#registry_port}/api/v1/`,
+        `http://localhost:${this.#middleServerPort}/api/v1/middleman/middleman-send-request-to-registry`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ method_name: method, params, key }),
+          body: JSON.stringify({ method, params, key }),
         }
       );
+      
+      console.log("Server Response in Client: ", server_response)
+
       if (server_response.status !== 200) {
         const errorData = await server_response.json();
         return { message: errorData.message };

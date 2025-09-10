@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import ApiError from "../utils/ApiError.js";
-import globalRegisterRouter from "../routes/globalRegisterRouter.mjs";
+import ApiError from "../../utils/ApiError.js";
+import ApiResponse from "../../utils/ApiResponse.js";
+import { globalRegisterRouter } from "../routes/globalRegisterRouter.mjs";
 
 const app = express();
 

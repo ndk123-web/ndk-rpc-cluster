@@ -1,5 +1,5 @@
-import ApiError from "../server/utils/ApiError.js";
-import ApiResponse from "../server/utils/ApiResponse.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import ApiError from "../utils/ApiError.js"
 import app from "./app/index.mjs";
 import chalk from "chalk";
 import os from 'os'
@@ -30,7 +30,7 @@ class GlobalRegister {
     constructor({ registryPort = 3331 }) {
         this.registryPort = registryPort;
 
-        app.use("/api/v1/get-registry-data", (req, _, next) => {
+        app.use("/api/v1/", (req, _, next) => {
             req.globalRegistry = this.globalRegistry
             next();
         }, globalRegisterRouter);

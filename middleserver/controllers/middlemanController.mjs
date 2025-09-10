@@ -1,12 +1,14 @@
 import ApiResponse from "../../utils/ApiResponse.js";
 
 const MiddlemanController = async (req, res) => {
-    const { method: serverMethod , params: serverParams, key } = req.body
+    const { method: serverMethod, params: serverParams, key } = req.body
     if (!serverMethod || !serverParams || !key) {
         res.status(400).json(new ApiResponse(400, "All Method/params/key is required"))
     }
 
     const { registryHost, registryPort } = req.registryData;
+
+    console.log("Sending Request to Registry")
 
     const registryResponse = await fetch(`http://${registryHost}:${registryPort}/api/v1/get-registry-data`, {
         method: "POST",
@@ -18,9 +20,11 @@ const MiddlemanController = async (req, res) => {
 
     console.log("Registry Response: ", registryResponse)
 
-    const { host, port, method, params } = registryResponse.data;
+    const jsonresponse = await registryResponse.json();
+    const { host, port, method, params } = jsonresponse.data;
 
-    const serverResponse = await fetch(`http://${host}:${port}/api/v1/run-rpc-method`, {
+    console.log("Sending Request to Server with: ", { host, port, method, params })
+    const serverResponse = await fetch(`http://${host}:${port}/api/v1/rpc/run-rpc-method`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -28,7 +32,10 @@ const MiddlemanController = async (req, res) => {
         body: JSON.stringify({ method, params }),
     })
 
-    return res.status(200).json(new ApiResponse(200, "Method executed successfully", { serverResponse }));
+    console.log("Registry Response in Middleserver: ", serverResponse)
+    const jsonresponsee = await serverResponse.json()
+
+    return res.status(200).json(new ApiResponse(200, "Method executed successfully", jsonresponsee));
 }
 
 export { MiddlemanController }

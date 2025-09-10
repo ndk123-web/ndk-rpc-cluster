@@ -25,14 +25,14 @@ function getAllIPv4() {
 
 class MiddleServer {
     port = "";
-    registryPort = "";
-    registryHost = "";
+    registryPort = 3331;
+    registryHost = "localhost";
     showLog = true;
 
-    constructor({ port, registryPort, registryHost, showLog = true }) {
-        this.port = port || 4132;
-        this.registryHost = registryHost || "localhost"; // registry ka host
-        this.registryPort = registryPort || 3000;        // registry ka port
+    constructor({ port, registryPort = 3331, registryHost = "localhost", showLog = true }) {
+        this.port = port || 4132;  // middleserever port
+        this.registryHost = registryHost; // registry ka host
+        this.registryPort = registryPort;        // registry ka port
         this.showLog = showLog;                          // properly respect karega
         this.app = express();
 
