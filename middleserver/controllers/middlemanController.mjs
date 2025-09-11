@@ -48,9 +48,11 @@ const MiddlemanController = async (req, res) => {
         return res.status(400).json(new ApiResponse(400, "All Method/params/key is required"));
     }
 
-    const { registryHost, registryPort } = req.registryData;
+    const { registryHost, registryPort, showLog } = req.registryData;
 
-    logInfo("Sending request to Registry", { key, serverMethod, serverParams });
+    if (showLog) {
+        logInfo("Sending request to Registry", { key, serverMethod, serverParams });
+    }
 
     let jsonresponse;
     try {
@@ -74,7 +76,9 @@ const MiddlemanController = async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Invalid server info from registry"));
     }
 
-    logInfo("Sending request to Server", { host, port, method, params });
+    if (showLog) {
+        logInfo("Sending request to Server", { host, port, method, params });
+    }
 
     let jsonresponsee;
     try {
@@ -84,21 +88,29 @@ const MiddlemanController = async (req, res) => {
             body: JSON.stringify({ method, params }),
         });
 
-        logSuccess("Received response from Server", { status: serverResponse.status, host, port, method });
+        if (showLog) {
+            logSuccess("Received response from Server", { status: serverResponse.status, host, port, method });
+        }
         jsonresponsee = await serverResponse.json();
     } catch (err) {
-        logError("Failed to fetch server response", { error: err.message });
+        if (showLog) {
+            logError("Failed to fetch server response", { error: err.message });
+        }
         return res.status(500).json(new ApiResponse(500, "Server request failed"));
     }
 
     if (jsonresponsee.statusCode !== 200) {
-        logError("Server returned an error", jsonresponsee);
+        if (showLog) {
+            logError("Server returned an error", jsonresponsee);
+        }
         return res.status(jsonresponsee.statusCode).json(
             new ApiResponse(jsonresponsee.statusCode, { message: jsonresponsee.message, statusCode: jsonresponsee.statusCode })
         );
     }
 
-    logSuccess("Method executed successfully", { message: jsonresponsee.message });
+    if (showLog) {
+        logSuccess("Method executed successfully", { message: jsonresponsee.message });
+    }
 
     return res.status(200).json(
         new ApiResponse(200, "Method executed successfully", { message: jsonresponsee.message, data: jsonresponsee.data })

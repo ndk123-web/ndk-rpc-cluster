@@ -5,6 +5,7 @@ import chalk from "chalk";
 import os from 'os'
 import figlet from "figlet";
 import { globalRegisterRouter } from "./routes/globalRegisterRouter.mjs";
+import MiddleServer from '../middleserver/index.mjs';
 
 function getAllIPv4() {
     const nets = os.networkInterfaces();
@@ -26,9 +27,17 @@ class GlobalRegister {
     globalRegistry = {};
     registryPort = undefined;
     registryHost = "localhost"
+    createMiddleware = "";
+    static count = 0
 
-    constructor({ registryPort = 3331 }) {
+    constructor({ registryPort = 3331, createMiddleware = true }) {
         this.registryPort = registryPort;
+        GlobalRegister.count = GlobalRegister.count + 1;
+        this.createMiddleware = createMiddleware
+
+        if (GlobalRegister.count > 1) {
+            throw new ApiError(400, "Multiple GlobalRegister instances are not allowed");
+        }
 
         app.use("/api/v1/", (req, _, next) => {
             req.globalRegistry = this.globalRegistry
@@ -90,6 +99,14 @@ class GlobalRegister {
     // Start Global Service
     async start() {
         console.log(chalk.magenta(figlet.textSync("NDK-Registry", { horizontalLayout: "full" })));
+
+        if (this.createMiddleware) {
+            // Automatically starts the middleserver on 4431
+            const middleserver = new MiddleServer({ showLog: false })
+            await middleserver.start();
+        }
+
+        // On Start Of Registry Server
         app.listen(this.registryPort, () => {
             console.log(chalk.greenBright(`NDK-Registry is running at: http://${this.registryHost}:${this.registryPort}`));
             const localIps = getAllIPv4();

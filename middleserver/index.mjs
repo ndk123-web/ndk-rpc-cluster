@@ -61,6 +61,7 @@ class MiddleServer {
             req.registryData = {
                 registryHost: this.registryHost,
                 registryPort: this.registryPort,
+                showLog: this.showLog
             };
             next();
         }, middlemanRouter);
@@ -72,7 +73,7 @@ class MiddleServer {
 
     async start() {
         if (!this.showLog) {
-            this.app.listen(this.port, () => { console.log(chalk.green(`NDK-RPC-MiddleServer is running on http://localhost:${this.port}`)) });
+            this.app.listen(this.port, () => { console.log(chalk.green(`NDK-RPC-MiddleServer is running on http://localhost:${this.port}`) + "\n    ") });
             return;
         }
 
