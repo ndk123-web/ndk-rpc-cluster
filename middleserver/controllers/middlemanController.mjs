@@ -21,9 +21,6 @@ const MiddlemanController = async (req, res) => {
     console.log("Registry Response: ", registryResponse)
 
     const jsonresponse = await registryResponse.json();
-    if (jsonresponse.statusCode !== 200) {
-        return res.status(jsonresponse.statusCode).json(new ApiResponse(jsonresponse.statusCode, jsonresponse.message))
-    }
     const { host, port, method, params } = jsonresponse.data;
 
     console.log("Sending Request to Server with: ", { host, port, method, params })
@@ -37,18 +34,8 @@ const MiddlemanController = async (req, res) => {
 
     console.log("Registry Response in Middleserver: ", serverResponse)
     const jsonresponsee = await serverResponse.json()
-    console.log("JSON Response in Middleserver: ", jsonresponsee)
-    if (jsonresponsee.statusCode !== 200) {
-        const sendResponse = { message: jsonresponsee.message }
-        return res.status(400).json(new ApiResponse(400, sendResponse))
-    }
 
-    const sendResponse = {
-        message: jsonresponsee.message,
-        data: jsonresponsee.data
-    }
-
-    return res.status(200).json(new ApiResponse(200, "Method executed successfully", sendResponse));
+    return res.status(200).json(new ApiResponse(200, "Method executed successfully", jsonresponsee));
 }
 
 export { MiddlemanController }
