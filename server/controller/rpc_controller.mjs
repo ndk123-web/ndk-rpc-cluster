@@ -19,14 +19,55 @@ const GiveAuthCode = async (req, res) => {
   }
 };
 
+
+let count = 0;
+
+// fault tolerance
+const tryReplicas = async (replicaPorts, method, params) => {
+  try {
+    for (let i = 0; i < replicaPorts.length; i++) {
+      const response = await fetch(`http://localhost:${replicaPorts[i]}/api/v1/rpc/run-rpc-method`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method, params }),
+      });
+      const data = await response.json();
+      if (data.statusCode === 200) {
+        return data;
+      }
+    }
+  } catch (err) {
+    console.log(err);
+    return { message: err.message }
+  }
+}
+
 const RunRpcMethod = async (req, res) => {
   try {
     // console.log("RPC GLOBAL REGISTRY: " , rpc_methods);
     const { method, params } = req.body;
     const rpc_methods = req.rpc_methods;
+    const replicaPorts = req.replicaPorts;
+    const len = replicaPorts.length;
+    const serverPort = req.serverPort;
     // console.log("RPC METHODS IN REQ: " , rpc_methods);
     // Check for valid auth code
 
+    // if serverport is not in replicaports it means it is loadbalancer 
+    // and it will forward the req to the available replicas
+    if (!replicaPorts.includes(serverPort)) {
+      count = (count + 1) % len
+      const response = await fetch(`http://localhost:${replicaPorts[count]}/api/v1/rpc/run-rpc-method`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method, params }),
+      });
+      const data = await response.json();
+      if (data.statusCode !== 200) {
+        return await tryReplicas(replicaPorts, method, params)
+      }
+      return res.status(200).json(data);
+    }
     // Validate required fields
     if (!method) {
       return res
@@ -41,7 +82,7 @@ const RunRpcMethod = async (req, res) => {
 
     if (!methodObj) {
       console.log(
-        chalk.red("   Method not found: ") + chalk.white(method)
+        chalk.red("   Method not found: ") + chalk.white(method) + " " + chalk.magenta("Response from") + chalk.white(serverPort)
       );
       // console.log("Method not found: ", method_name);
       return res
@@ -70,7 +111,10 @@ const RunRpcMethod = async (req, res) => {
       chalk.white(method) +
       " " +
       chalk.greenBright("→ Result: ") +
-      chalk.white(result)
+      chalk.white(result) +
+      " " +
+      chalk.green("Response from Port: ") +
+      chalk.white(serverPort)
     );
     res.status(200).json(response);
   } catch (err) {

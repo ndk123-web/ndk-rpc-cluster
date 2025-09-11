@@ -12,3 +12,5 @@ const isRegistered = await server.register_functions([
 ]);
 
 await server.start();
+
+await server.createReplicas({ replicas: 2, basePort: 6000 })

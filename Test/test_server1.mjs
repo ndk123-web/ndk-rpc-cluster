@@ -11,4 +11,8 @@ await server1.register_functions([
   },
 ]);
 
+// it means start the load balancer server
 await server1.start();
+
+// now create the replica
+await server1.createReplicas({ replicas: 3, basePort: 8000 })

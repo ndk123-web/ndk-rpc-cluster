@@ -33,10 +33,15 @@ function getAllIPv4() {
 class ndk_rpc_server {
   port = "";
   rpc_methods = [];
+  replicaPorts = [];
+  static printTextCount = 0;
+  static availablePorts = [];
+  replicas = 0;
 
   constructor(port_obj) {
-    let { port } = port_obj;
+    let { port, isReplica = false, replicas: replicaCount = 1 } = port_obj;
     this.port = port || 3000;
+    this.isReplica = isReplica;
     this.app = express();
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
@@ -56,10 +61,15 @@ class ndk_rpc_server {
       return res.status(500).json(new ApiResponse(500, "Internal Server Error"));
     });
 
-    this.app.use("/api/v1/rpc", (req , _ , next) => {
+    // at least one server will run and we need to call internalyy by default for replicas 
+    // this.createReplicas({ replicas: replicaCount, basePort: 9000 })
+
+    this.app.use("/api/v1/rpc", (req, _, next) => {
       req.rpc_methods = this.rpc_methods;
+      req.replicaPorts = this.replicaPorts;
+      req.serverPort = this.port
       next();
-    }  , rpc_router);
+    }, rpc_router);
 
     this.app.get("/", (req, res) => {
       res.send("NDK-RPC-Engine is running on port " + this.port);
@@ -68,23 +78,35 @@ class ndk_rpc_server {
 
   async start() {
     this.app.listen(this.port, () => {
-      console.log(
-        chalk.magenta(figlet.textSync("NDK-RPC", { horizontalLayout: "full" }))
-      );
-      console.log(
-        chalk.greenBright("   Server is running at: ") +
-        chalk.yellowBright.bold(`http://localhost:${this.port}`)
-      );
-      const localIps = getAllIPv4();
-
-      for (let ipObj of localIps) {
+      if (this.isReplica) {
+        ndk_rpc_server.printTextCount++;
+        if (ndk_rpc_server.printTextCount === 1) {
+          console.log(chalk.green(`${this.replicas} replicas created`))
+        }
         console.log(
-          chalk.greenBright("   Accessible at: ") +
-          chalk.yellowBright.bold(`http://${ipObj.address}:${this.port}`)
+          chalk.green("   Replica Server is running at: ") +
+          chalk.yellowBright.bold(`http://localhost:${this.port}`)
         );
+        console.log(chalk.cyanBright("📡 Ready to accept RPC requests..."));
+      } else {
+        console.log(
+          chalk.magenta(figlet.textSync("NDK-Load-Balancer", { horizontalLayout: "full" }))
+        );
+        console.log(
+          chalk.greenBright("   Server is running at: ") +
+          chalk.yellowBright.bold(`http://localhost:${this.port}`)
+        );
+        const localIps = getAllIPv4();
+        for (let ipObj of localIps) {
+          console.log(
+            chalk.greenBright("   Accessible at: ") +
+            chalk.yellowBright.bold(`http://${ipObj.address}:${this.port}`)
+          );
+        }
+        console.log(chalk.cyanBright("📡 Ready to accept Load Balancer requests..."));
+        console.log() // new line
+        return true
       }
-
-      console.log(chalk.cyanBright("📡 Ready to accept RPC requests..."));
     });
   }
 
@@ -129,7 +151,7 @@ class ndk_rpc_server {
         this.rpc_methods.push(obj);
         // Also add to global registry for controller access
         globalRpcRegistry.methods.push(obj);
-        console.log(`Global Registered function: ${JSON.stringify(this.rpc_methods)}`);
+        // console.log(`Global Registered function: ${JSON.stringify(this.rpc_methods)}`);
       }
 
       //   console.log("Registered functions:", this.rpc_methods);
@@ -140,6 +162,21 @@ class ndk_rpc_server {
         err.message || "Internal Server Error"
       );
     }
+  }
+
+  async createReplicas({ replicas = 1, basePort = 7000 }) {
+    // console.log(chalk.magenta(`${this.replicaPorts.length} replicas created !!`))
+    this.replicas = replicas
+    for (let i = 0; i < replicas; i++) {
+      let server = new ndk_rpc_server({ port: basePort + i, isReplica: true })
+      server.register_functions(this.rpc_methods)
+      server.replicas = replicas // this is the reason why actual number of replicas seeing in Console
+      server.replicaPorts = this.replicaPorts
+      this.replicaPorts.push(basePort + i)
+      await server.start()
+    }
+    // console.log(chalk.magenta(`${this.replicaPorts.length} replicas created`))
+    return true
   }
 }
 
