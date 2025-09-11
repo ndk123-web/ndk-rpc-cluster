@@ -1,41 +1,108 @@
+import chalk from "chalk";
 import ApiResponse from "../../utils/ApiResponse.js";
 
+const logInfo = (label, obj = null) => {
+    const time = new Date().toISOString();
+    if (obj) {
+        console.log(
+            chalk.blue(`[INFO ${time}]`) +
+            " " + chalk.bold(label) +
+            " → " + chalk.cyan(JSON.stringify(obj, null, 2))
+        );
+    } else {
+        console.log(chalk.blue(`[INFO ${time}]`) + " " + chalk.bold(label));
+    }
+};
+
+const logSuccess = (label, obj = null) => {
+    const time = new Date().toISOString();
+    if (obj) {
+        console.log(
+            chalk.green(`[SUCCESS ${time}]`) +
+            " " + chalk.bold(label) +
+            " → " + chalk.green(JSON.stringify(obj, null, 2))
+        );
+    } else {
+        console.log(chalk.green(`[SUCCESS ${time}]`) + " " + chalk.bold(label));
+    }
+};
+
+const logError = (label, obj = null) => {
+    const time = new Date().toISOString();
+    if (obj) {
+        console.error(
+            chalk.red(`[ERROR ${time}]`) +
+            " " + chalk.bold(label) +
+            " → " + chalk.red(JSON.stringify(obj, null, 2))
+        );
+    } else {
+        console.error(chalk.red(`[ERROR ${time}]`) + " " + chalk.bold(label));
+    }
+};
+
 const MiddlemanController = async (req, res) => {
-    const { method: serverMethod, params: serverParams, key } = req.body
+    const { method: serverMethod, params: serverParams, key } = req.body;
+
     if (!serverMethod || !serverParams || !key) {
-        res.status(400).json(new ApiResponse(400, "All Method/params/key is required"))
+        logError("Missing required fields in request body", { serverMethod, serverParams, key });
+        return res.status(400).json(new ApiResponse(400, "All Method/params/key is required"));
     }
 
     const { registryHost, registryPort } = req.registryData;
 
-    console.log("Sending Request to Registry")
+    logInfo("Sending request to Registry", { key, serverMethod, serverParams });
 
-    const registryResponse = await fetch(`http://${registryHost}:${registryPort}/api/v1/get-registry-data`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ key, method: serverMethod, params: serverParams }),
-    })
+    let jsonresponse;
+    try {
+        const registryResponse = await fetch(`http://${registryHost}:${registryPort}/api/v1/get-registry-data`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key, method: serverMethod, params: serverParams }),
+        });
 
-    console.log("Registry Response: ", registryResponse)
+        logSuccess("Received response from Registry", { status: registryResponse.status });
+        jsonresponse = await registryResponse.json();
 
-    const jsonresponse = await registryResponse.json();
-    const { host, port, method, params } = jsonresponse.data;
+    } catch (err) {
+        logError("Failed to fetch registry data", { error: err.message });
+        return res.status(500).json(new ApiResponse(500, "Registry request failed"));
+    }
 
-    console.log("Sending Request to Server with: ", { host, port, method, params })
-    const serverResponse = await fetch(`http://${host}:${port}/api/v1/rpc/run-rpc-method`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ method, params }),
-    })
+    const { host, port, method, params } = jsonresponse.data || {};
+    if (!host || !port) {
+        logError("Registry returned invalid server info", jsonresponse);
+        return res.status(500).json(new ApiResponse(500, "Invalid server info from registry"));
+    }
 
-    console.log("Registry Response in Middleserver: ", serverResponse)
-    const jsonresponsee = await serverResponse.json()
+    logInfo("Sending request to Server", { host, port, method, params });
 
-    return res.status(200).json(new ApiResponse(200, "Method executed successfully", jsonresponsee));
-}
+    let jsonresponsee;
+    try {
+        const serverResponse = await fetch(`http://${host}:${port}/api/v1/rpc/run-rpc-method`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ method, params }),
+        });
 
-export { MiddlemanController }
+        logSuccess("Received response from Server", { status: serverResponse.status, host, port, method });
+        jsonresponsee = await serverResponse.json();
+    } catch (err) {
+        logError("Failed to fetch server response", { error: err.message });
+        return res.status(500).json(new ApiResponse(500, "Server request failed"));
+    }
+
+    if (jsonresponsee.statusCode !== 200) {
+        logError("Server returned an error", jsonresponsee);
+        return res.status(jsonresponsee.statusCode).json(
+            new ApiResponse(jsonresponsee.statusCode, { message: jsonresponsee.message, statusCode: jsonresponsee.statusCode })
+        );
+    }
+
+    logSuccess("Method executed successfully", { message: jsonresponsee.message });
+
+    return res.status(200).json(
+        new ApiResponse(200, "Method executed successfully", { message: jsonresponsee.message, data: jsonresponsee.data })
+    );
+};
+
+export { MiddlemanController };

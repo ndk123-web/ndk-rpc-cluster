@@ -18,7 +18,7 @@ class Client {
         }
       );
       
-      console.log("Server Response in Client: ", server_response)
+      // console.log("Server Response in Client: ", server_response)
 
       if (server_response.status !== 200) {
         const errorData = await server_response.json();
