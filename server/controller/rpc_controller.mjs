@@ -63,7 +63,7 @@ const RunRpcMethod = async (req, res) => {
         body: JSON.stringify({ method, params }),
       });
       const data = await response.json();
-      if (data.statusCode !== 200) {
+      if (data.statusCode === 500) {
         return await tryReplicas(replicaPorts, method, params)
       }
       return res.status(200).json(data);
@@ -128,7 +128,7 @@ const RunRpcMethod = async (req, res) => {
     return res
       .status(500)
       .json(
-        new ApiResponse(500, "Something went wrong while executing RPC method")
+        new ApiResponse(500, "May Be Server Crash")
       );
   }
 };
