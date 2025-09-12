@@ -41,6 +41,7 @@ const add = ({ a, b }) => a + b;
 const multiply = ({ a, b }) => a * b;
 
 // Register functions that will be available on all replicas
+// Each function must follow this exact schema:
 const functions = [
   { function_name: "add", function_block: add },
   { function_name: "multiply", function_block: multiply },
@@ -67,14 +68,20 @@ const registry = new GlobalRegistry({
   createMiddleware: true, // Auto-create middleware server
 });
 
-// Register your services
-await registry.registerKeys({
-  MathService: {
-    host: "localhost",
-    port: 3000, // Load balancer port
+//  must follow this exact schema:
+const keys = {
+  AddService: {
+    host: "localhost", // host of Load Server
+    port: 3000, // port of Load Server
   },
-  // Add more services as needed
-});
+  SubService: {
+    host: "localhost", // host of Load Server
+    port: 4000, // host of Load Port
+  },
+};
+
+// Register your services
+await registry.registerKeys(keys);
 
 await registry.start();
 // Registry runs on port 3331, Middleware on port 4132
