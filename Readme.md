@@ -1,113 +1,264 @@
 # NDK-RPC-Cluster
 
-## Supported
+[![npm version](https://badge.fury.io/js/ndk-rpc-cluster.svg)](https://badge.fury.io/js/ndk-rpc-cluster)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 
-1. Client: RPC client with request handling
-2. Server: RPC server with replica support
-3. Load Balancer: Round-robin load balancing across replicas
-4. Registry: Service discovery and key management
-5. Middleware Server: Middleman for request routing
-6. Utils: Error handling and response utilities
-7. Fault Tolerance: Retry mechanisms and failover
+> **Enterprise-grade RPC cluster system with load balancing, fault tolerance, service discovery and automatic failover support**
 
-## Sample Code
+## 🚀 Features
 
-1. Create A Load Balancer
+- **🔄 Load Balancing** - Round-robin distribution across replicas
+- **⚡ Fault Tolerance** - Automatic retry mechanisms and failover
+- **🔍 Service Discovery** - Global registry for service management  
+- **📡 RPC Support** - Remote procedure calls with full cluster support
+- **🛡️ Error Handling** - Comprehensive error management
+- **🔧 Easy Setup** - Simple configuration and deployment
 
-`Load Balancer Server 1`
+## 📦 Installation
 
-```js
-import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
+```bash
+npm install ndk-rpc-cluster
+```
 
+## 🏗️ Architecture
+
+![NDK-RPC-Cluster Architecture](./public/Architecture.png)
+
+```
+Client → Registry → Middleware → Load Balancer → Replicas (Servers)
+```
+
+## 🚀 Quick Start
+
+### 1. Create Load Balancer with Replicas
+
+```javascript
+import LoadBalancer from 'ndk-rpc-cluster/loadBalancer';
+
+// Define your functions
 const add = ({ a, b }) => a + b;
+const multiply = ({ a, b }) => a * b;
 
-const register_functions = [
-  {
-    function_name: "add",
-    function_block: add,
-  },
+// Register functions that will be available on all replicas
+const functions = [
+  { function_name: "add", function_block: add },
+  { function_name: "multiply", function_block: multiply }
 ];
 
-let config = {
-  port: 3000, // Load Server Running on this port
-  replicas: 3, // create this much replicas
-  register_functions: register_functions, // this are the function that will register on all replicas
-  basePort: 9000, // base port of replica ports
+// Load balancer configuration
+const config = {
+  port: 3000,           // Load balancer port
+  replicas: 3,          // Number of replica servers
+  register_functions: functions,
+  basePort: 9000        // Starting port for replicas (9000, 9001, 9002)
 };
 
-let loadServer = new ndk_load_balancer(config);
-loadserver.start();
+const loadBalancer = new LoadBalancer(config);
+loadBalancer.start();
 ```
 
-`Load Balancer Server 2`
+### 2. Setup Global Registry
 
-```js
-import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
+```javascript
+import GlobalRegistry from 'ndk-rpc-cluster/registry';
 
-const sub = ({ a, b }) => a - b;
-
-const register_functions = [
-  {
-    function_name: "sub",
-    function_block: sub,
-  },
-];
-
-let config = {
-  port: 4000,
-  replicas: 2,
-  register_functions: register_functions,
-  basePort: 8000,
-};
-
-let loadServer = new ndk_load_balancer(config);
-loadserver.start();
-```
-
-2. Create a Global Registry
-
-```js
-import GlobalRegister from "ndk-rpc-cluster/registry";
-
-let config = {
-  createMiddleware: true, // by default createMiddleware will be true , if false then manuallu u need to start the middleServer ( Recommended )
-};
-
-const globalRegister = new GlobalRegister();
-
-await globalRegister.registerKeys({
-  AddService: {
-    // here Enter That key , that is enter by Client (example here AddService and SubService)
-    host: "localhost", // here enter Load Server's Host
-    port: 3000, // here enter Load Server's Port
-  },
-  SubService: {
-    host: "localhost",
-    port: 4000,
-  },
+const registry = new GlobalRegistry({
+  createMiddleware: true  // Auto-create middleware server
 });
 
-await globalRegister.start();
+// Register your services
+await registry.registerKeys({
+  MathService: {
+    host: "localhost",
+    port: 3000  // Load balancer port
+  },
+  // Add more services as needed
+});
+
+await registry.start();
+// Registry runs on port 3331, Middleware on port 4132
 ```
 
-3. Now All Set U Just Need To Create the Client
+### 3. Create Client
 
-```js
-import { Client } from "ndk-rpc-cluster/client";
+```javascript
+import { Client } from 'ndk-rpc-cluster/client';
 
 const client = new Client();
 
+// Make RPC calls
 const response = await client.request({
   method: "add",
-  params: { a: 5, b: 2 }, // pass input in objects
-  key: "AddService", // key which we enter in Global Registry
+  params: { a: 10, b: 5 },
+  key: "MathService"  // Service key from registry
 });
 
-console.log("Response from server to Client : ", response);
+console.log("Result:", response.data.result); // Output: 15
 ```
 
-## Important Note
+## 📋 Complete Example
 
-- Global Registry `Only Can Created Of One Instance` Do Not Try to create multiple Instance it will throw the error
-- Global Registry Will Run on Port `3331`
-- MiddleServer Will Run on Port `4132`
+Here's a full working example:
+
+```javascript
+// server.js - Load Balancer Setup
+import LoadBalancer from 'ndk-rpc-cluster/loadBalancer';
+
+const mathFunctions = [
+  { 
+    function_name: "add", 
+    function_block: ({ a, b }) => a + b 
+  },
+  { 
+    function_name: "subtract", 
+    function_block: ({ a, b }) => a - b 
+  },
+  { 
+    function_name: "multiply", 
+    function_block: ({ a, b }) => a * b 
+  }
+];
+
+const mathService = new LoadBalancer({
+  port: 3000,
+  replicas: 3,
+  register_functions: mathFunctions,
+  basePort: 9000
+});
+
+mathService.start();
+```
+
+```javascript
+// registry.js - Service Registry
+import GlobalRegistry from 'ndk-rpc-cluster/registry';
+
+const registry = new GlobalRegistry();
+
+await registry.registerKeys({
+  MathService: {
+    host: "localhost",
+    port: 3000
+  }
+});
+
+await registry.start();
+```
+
+```javascript
+// client.js - Client Usage
+import { Client } from 'ndk-rpc-cluster/client';
+
+const client = new Client();
+
+async function performCalculations() {
+  try {
+    // Addition
+    const sum = await client.request({
+      method: "add",
+      params: { a: 15, b: 25 },
+      key: "MathService"
+    });
+    console.log("Sum:", sum.data.result); // 40
+
+    // Multiplication
+    const product = await client.request({
+      method: "multiply", 
+      params: { a: 6, b: 7 },
+      key: "MathService"
+    });
+    console.log("Product:", product.data.result); // 42
+
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+}
+
+performCalculations();
+```
+
+## 🛠️ Configuration
+
+### Load Balancer Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `port` | number | - | Load balancer server port |
+| `replicas` | number | - | Number of replica servers |
+| `basePort` | number | - | Starting port for replicas |
+| `register_functions` | array | - | Functions to register on replicas |
+
+### Registry Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `createMiddleware` | boolean | `true` | Auto-create middleware server |
+
+## 🔧 Scripts
+
+```bash
+# Start complete cluster
+npm run cluster:start
+
+# Start individual components
+npm run start:registry
+npm run start:load-balancer
+npm run start:middleware
+
+# Run tests
+npm test
+npm run test:client
+npm run test:server
+
+# Development mode
+npm run dev
+```
+
+## 🌐 Default Ports
+
+- **Global Registry**: `3331`
+- **Middleware Server**: `4132`
+- **Load Balancer**: `3000` (configurable)
+- **Replica Servers**: `9000+` (basePort + index)
+
+## 🔄 How It Works
+
+1. **Registry** manages service discovery and routing
+2. **Middleware** handles request forwarding  
+3. **Load Balancer** distributes requests across replicas
+4. **Replicas** execute the actual RPC methods
+5. **Client** makes requests through the registry
+
+## ⚠️ Important Notes
+
+- Global Registry can only have **one instance** - multiple instances will throw errors
+- All components use ES modules (`import/export`)
+- Requires Node.js 16+ for optimal performance
+- Functions should be pure and stateless for best results
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Navnath Kadam**
+- GitHub: [@ndk123-web](https://github.com/ndk123-web)
+- Email: ndk123.web@gmail.com
+
+## 🙏 Support
+
+If you find this project helpful, please give it a ⭐ on GitHub!
+
+---
+
+**Built with ❤️ for the Node.js community**
