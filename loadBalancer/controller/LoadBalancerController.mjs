@@ -28,9 +28,13 @@ const RetryOtherReplicas = async (replicaPorts, method, params, failedPort) => {
 
 const loadBalancerController = async (req, res) => {
     var sendPort;
+    var replicaPorts; // Declare outside try block to avoid scope issues
+    var method; // Declare outside try block
+    var params; // Declare outside try block
+    
     try {
-        const { method, params } = req.body;
-        const replicaPorts = req.replicaPorts;
+        ({ method, params } = req.body); // Destructure and assign
+        replicaPorts = req.replicaPorts; // Assign here
         // console.log("Replicas Ports Inside Load Balancer Controller: ", replicaPorts);
 
         // Ensure we have valid replica ports and reset counter if out of bounds
@@ -79,19 +83,24 @@ const loadBalancerController = async (req, res) => {
         }
 
     } catch (err) {
-        try {
-            const retryResponse = await RetryOtherReplicas(replicaPorts, method, params, sendPort);
-            const retryData = await retryResponse.json();
-            return res.status(200).json(retryData);
-        }
-        catch (err) {
+        // Check if all required variables are available before retrying
+        if (replicaPorts && replicaPorts.length > 0 && method && params !== undefined) {
+            try {
+                const retryResponse = await RetryOtherReplicas(replicaPorts, method, params, sendPort);
+                const retryData = await retryResponse.json();
+                return res.status(200).json(retryData);
+            } catch (retryErr) {
+                console.log(chalk.red("All replicas failed: ") + chalk.white(retryErr.message));
+                return res.status(500).json(new ApiResponse(500, "All replica servers failed"));
+            }
+        } else {
             console.log(chalk.red("Error: ") + chalk.white(err.message));
             return res.status(500).json(new ApiResponse(500, "Internal Server Error"));
         }
     } finally {
         // Only increment if we have valid replica ports
-        if (req.replicaPorts && req.replicaPorts.length > 0) {
-            roundRobinCount = (roundRobinCount + 1) % req.replicaPorts.length;
+        if (replicaPorts && replicaPorts.length > 0) {
+            roundRobinCount = (roundRobinCount + 1) % replicaPorts.length;
         }
     }
 };
