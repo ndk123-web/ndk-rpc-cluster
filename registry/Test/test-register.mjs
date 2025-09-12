@@ -1,8 +1,6 @@
 import GlobalRegister from "../index.mjs";
 
 const globalRegister = new GlobalRegister({
-    registryPort: 3331,
-
     // by default createMiddleware will be true , false means user want to manually create the middleware
     createMiddleware: true 
 });
@@ -10,11 +8,11 @@ const globalRegister = new GlobalRegister({
 await globalRegister.registerKeys({
     AddService: {
         host: "localhost",
-        port: 4000
+        port: 3000
     },
     SubService: {
         host: "localhost",
-        port: 5000
+        port: 4000
     }
 })
 

@@ -11,26 +11,31 @@ class Client {
         `http://localhost:${this.#middleServerPort}/api/v1/middleman/middleman-send-request-to-registry`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ method, params, key }),
         }
       );
-      
-      // console.log("Server Response in Client: ", server_response)
 
-      if (server_response.status !== 200) {
-        const errorData = await server_response.json();
-        return { message: errorData.message };
-      }
       const responseData = await server_response.json();
-      let { data, message } = responseData;
-      return { message, ...data };
+      // console.log("Response Data: ", responseData)
+
+      if (server_response.ok) {
+        // ✅ Success response
+        // { message, data: { method, result } }
+        return {
+          message: responseData.message,
+          method: responseData.data?.data?.method,
+          result: responseData.data?.data?.result,
+        };
+      } else {
+        // ❌ Error response (replica error or registry error)
+        return {
+          error:
+            responseData.message?.message || responseData.message || "Unknown error",
+        };
+      }
     } catch (err) {
-      // DEBUG
-      //   console.log(err);
-      return { message: "Something went wrong while making request to server" };
+      return { error: "Something went wrong while making request to server" };
     }
   }
 }

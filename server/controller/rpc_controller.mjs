@@ -3,133 +3,83 @@ import ApiError from "../../utils/ApiError.js";
 import ApiResponse from "../../utils/ApiResponse.js";
 import chalk from "chalk";
 
+// Issue auth code; relies on req.rpc_methods.auth_codes
 const GiveAuthCode = async (req, res) => {
   try {
+    const rpc_methods = req.rpc_methods;
+    if (!rpc_methods || !rpc_methods.auth_codes || typeof rpc_methods.auth_codes.add !== "function") {
+      return res.status(500).json(new ApiResponse(500, "RPC registry not initialized"));
+    }
+
     const auth_code = randomBytes(16).toString("hex");
-    // Store auth code in global registry
     rpc_methods.auth_codes.add(auth_code);
     console.log("Generated auth code: ", auth_code);
-    const response = new ApiResponse(200, "Auth code generated successfully", {
-      auth_code,
-    });
-    res.status(200).json(response);
+    const response = new ApiResponse(200, "Auth code generated successfully", { auth_code });
+    return res.status(200).json(response);
   } catch (err) {
     console.log(err);
     throw new ApiError(500, "Something went wrong while generating auth code");
   }
 };
 
-
-let count = 0;
-
-// fault tolerance
-const tryReplicas = async (replicaPorts, method, params) => {
-  try {
-    for (let i = 0; i < replicaPorts.length; i++) {
-      const response = await fetch(`http://localhost:${replicaPorts[i]}/api/v1/rpc/run-rpc-method`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method, params }),
-      });
-      const data = await response.json();
-      if (data.statusCode === 200) {
-        return data;
-      }
-    }
-  } catch (err) {
-    console.log(err);
-    return { message: err.message }
-  }
-}
-
+// Execute RPC method locally; load balancer handles distribution/failover
 const RunRpcMethod = async (req, res) => {
   try {
-    // console.log("RPC GLOBAL REGISTRY: " , rpc_methods);
-    const { method, params } = req.body;
-    const rpc_methods = req.rpc_methods;
-    const replicaPorts = req.replicaPorts;
-    const len = replicaPorts.length;
-    const serverPort = req.serverPort;
-    // console.log("RPC METHODS IN REQ: " , rpc_methods);
-    // Check for valid auth code
+    const { method, params } = req.body || {};
+    const rpc_methods = req.rpc_methods; // Array of { function_name, function_block }
+    const serverPort = req.serverPort || "unknown"; // For logging only
 
-    // if serverport is not in replicaports it means it is loadbalancer 
-    // and it will forward the req to the available replicas
-    if (!replicaPorts.includes(serverPort)) {
-      count = (count + 1) % len
-      const response = await fetch(`http://localhost:${replicaPorts[count]}/api/v1/rpc/run-rpc-method`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method, params }),
-      });
-      const data = await response.json();
-      if (data.statusCode === 500) {
-        return await tryReplicas(replicaPorts, method, params)
-      }
-      return res.status(200).json(data);
-    }
-    // Validate required fields
+    // Validate input
     if (!method) {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, "method is required"));
+      return res.status(400).json(new ApiResponse(400, "method is required"));
+    }
+    if (!Array.isArray(rpc_methods)) {
+      return res.status(500).json(new ApiResponse(500, "RPC methods registry not available"));
     }
 
-    // Find the requested method
-    const methodObj = rpc_methods.find(
-      (m) => m.function_name === method
-    );
-
-    if (!methodObj) {
+    // Resolve method
+    const methodObj = rpc_methods.find((m) => m.function_name === method);
+    if (!methodObj || typeof methodObj.function_block !== "function") {
       console.log(
-        chalk.red("   Method not found: ") + chalk.white(method) + " " + chalk.magenta("Response from") + chalk.white(serverPort)
+        chalk.red("🚨 Method not found: ") +
+          chalk.white(`'${method}'`) +
+          " " +
+          chalk.magenta("Response from") + " " + 
+          chalk.white(serverPort)
       );
-      // console.log("Method not found: ", method_name);
-      return res
-        .status(404)
-        .json(new ApiResponse(404, `Method '${method}' not found`));
+      return res.status(404).json(new ApiResponse(404, `Method '${method}' not found`));
     }
 
-    // Execute the method with provided parameters
+    // Execute method
     let result;
-    if (params && Array.isArray(params)) {
+    if (Array.isArray(params)) {
       result = await methodObj.function_block(...params);
-    } else if (params) {
+    } else if (params !== undefined) {
       result = await methodObj.function_block(params);
     } else {
       result = await methodObj.function_block();
     }
 
-    const response = new ApiResponse(200, "Method executed successfully", {
-      method,
-      result,
-    });
+    const response = new ApiResponse(200, "Method executed successfully", { method, result });
 
-    // Inside RunRpcMethod after execution
     console.log(
       chalk.yellowBright("⚡ Method: ") +
-      chalk.white(method) +
-      " " +
-      chalk.greenBright("→ Result: ") +
-      chalk.white(result) +
-      " " +
-      chalk.green("Response from Port: ") +
-      chalk.white(serverPort)
+        chalk.white(method) +
+        " " +
+        chalk.greenBright("→ Result: ") +
+        chalk.white(result) +
+        " " +
+        chalk.green("Response from Port: ") +
+        chalk.white(serverPort)
     );
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (err) {
-    console.log(
-      chalk.red("   Error executing RPC method: ") + chalk.white(err.message)
-    );
+    console.log(chalk.red("   Error executing RPC method: ") + chalk.white(err.message));
     if (err instanceof ApiError) {
       const response = new ApiResponse(err.statusCode, err.message);
       return res.status(err.statusCode).json(response);
     }
-    return res
-      .status(500)
-      .json(
-        new ApiResponse(500, "May Be Server Crash")
-      );
+    return res.status(500).json(new ApiResponse(500, "May Be Server Crash"));
   }
 };
 

@@ -1,56 +1,106 @@
 {
-  "name": "ndk-rpc-engine",
-  "version": "1.0.5",
-  "description": "Lightweight RPC engine for Node.js with client and server support",
+  "name": "ndk-rpc-cluster",
+  "version": "1.0.0",
+  "description": "Enterprise-grade RPC cluster system with load balancing, fault tolerance, service discovery and automatic failover support",
   "type": "module",
+  "main": "./index.mjs",
   "exports": {
+    ".": "./index.mjs",
     "./client": "./client/index.mjs",
-    "./server": "./server/index.mjs"
+    "./server": "./server/index.mjs",
+    "./load-balancer": "./loadBalancer/index.mjs",
+    "./registry": "./registry/index.mjs",
+    "./middleware": "./middleserver/index.mjs",
+    "./utils": "./utils/index.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   },
   "scripts": {
-    "test": "node Test/test_server.mjs",
+    "start": "node loadBalancer/test/load-balancer-test.mjs",
+    "start:server": "node Test/test_server1.mjs",
+    "start:server2": "node Test/test_server2.mjs",
+    "start:registry": "node registry/Test/test-register.mjs",
+    "start:middleware": "node middleserver/Test/test_middleserver.mjs",
+    "start:load-balancer": "node loadBalancer/test/load-balancer-test.mjs",
+    "test": "npm run test:all",
+    "test:all": "npm run test:server && npm run test:client && npm run test:load-balancer",
+    "test:server": "node Test/test_server1.mjs",
     "test:client": "node client/test/test_client.mjs",
-    "example": "node Test/test_server.mjs",
-    "start": "node Test/test_server1.mjs",
-    "start2": "node Test/test_server2.mjs",
-    "register": "node registry/Test/test-register.mjs",
-    "middle": "node middleserver/Test/test_middleserver.mjs"
+    "test:load-balancer": "node loadBalancer/test/load-balancer-test.mjs",
+    "test:registry": "node registry/Test/test-register.mjs",
+    "test:middleware": "node middleserver/Test/test_middleserver.mjs",
+    "dev": "node --watch loadBalancer/test/load-balancer-test.mjs",
+    "demo": "npm run start:registry & npm run start:load-balancer",
+    "cluster:start": "npm run start:registry && npm run start:load-balancer",
+    "cluster:stop": "pkill -f node",
+    "lint": "echo 'Linting not configured yet'",
+    "format": "echo 'Formatting not configured yet'"
   },
   "files": [
-    "client",
-    "server",
-    "registry",
-    "middleserver",
-    "README.md"
+    "client/",
+    "server/",
+    "loadBalancer/",
+    "registry/",
+    "middleserver/",
+    "utils/",
+    "index.mjs",
+    "README.md",
+    "LICENSE"
   ],
   "keywords": [
     "rpc",
-    "engine",
-    "nodejs",
-    "client",
-    "server",
-    "ndk",
-    "remote-procedure-call",
-    "api",
+    "cluster",
+    "load-balancer",
     "microservices",
-    "express"
+    "fault-tolerance",
+    "service-discovery",
+    "distributed-systems",
+    "nodejs",
+    "ndk",
+    "replica",
+    "failover",
+    "retry-mechanism",
+    "round-robin",
+    "api-gateway",
+    "enterprise"
   ],
-  "author": "Navnath kadam",
+  "author": {
+    "name": "Navnath Kadam",
+    "email": "ndk123.web@gmail.com",
+    "url": "https://github.com/ndk123-web"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ndk123-web/ndk-rpc-engine.git"
+    "url": "https://github.com/ndk123-web/ndk-rpc-cluster.git"
   },
   "bugs": {
-    "url": "https://github.com/ndk123-web/ndk-rpc-engine/issues"
+    "url": "https://github.com/ndk123-web/ndk-rpc-cluster/issues"
   },
-  "homepage": "https://github.com/ndk123-web/ndk-rpc-engine#readme",
+  "homepage": "https://github.com/ndk123-web/ndk-rpc-cluster#readme",
   "dependencies": {
-    "chalk": "^5.6.0",
+    "chalk": "^5.3.0",
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.0.1",
-    "figlet": "^1.8.2",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "figlet": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "nodemon": "^3.0.2"
+  },
+  "optionalDependencies": {
     "node-fetch": "^3.3.2"
+  },
+  "peerDependencies": {
+    "node": ">=16.0.0"
+  },
+  "config": {
+    "defaultPort": 3000,
+    "defaultReplicas": 3,
+    "basePort": 9000,
+    "registryPort": 8080,
+    "middlewarePort": 5000
   }
 }

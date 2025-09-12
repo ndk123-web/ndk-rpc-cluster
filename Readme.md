@@ -1,132 +1,113 @@
-# 🚀 NDK-RPC-Engine
+# NDK-RPC-Cluster
 
-A lightweight yet powerful **RPC Engine with Load Balancing, Replication, and Global Service Registry**.
-This library allows you to easily create distributed systems with proper logging, replicas, and centralized service discovery.
+## Supported
 
----
+1. Client: RPC client with request handling
+2. Server: RPC server with replica support
+3. Load Balancer: Round-robin load balancing across replicas
+4. Registry: Service discovery and key management
+5. Middleware Server: Middleman for request routing
+6. Utils: Error handling and response utilities
+7. Fault Tolerance: Retry mechanisms and failover
 
-## ✨ Features
+## Sample Code
 
-* **RPC Server**: Create servers that can register and expose functions as RPC methods.
-* **Automatic Replicas**: Create as many replica servers as you want using `createReplicas()`.
-* **Global Registry**: Maintain a centralized key → server mapping (like DNS for services). Clients request services by key (e.g., `"SubService"`) instead of remembering host/port.
-* **Middleware Option**: Registry can automatically spin up a middleware (`createMiddleware: true`) to route requests transparently.
-* **Proper Logging**: Colored, timestamped logs for **INFO**, **SUCCESS**, and **ERROR** events.
-* **Distributed Setup**: Supports multiple services, each with its own port and replicas.
+1. Create A Load Balancer
 
----
-
-## 📦 Installation
-
-```bash
-npm install ndk-rpc-engine
-```
-
----
-
-## 🛠 Usage
-
-### 1️⃣ Create a Server
+`Load Balancer Server 1`
 
 ```js
-import ndk_rpc_server from "ndk-rpc-engine";
-
-let server1 = new ndk_rpc_server({ port: 4000 });
+import ndk_load_balancer from "../index.mjs";
 
 const add = ({ a, b }) => a + b;
 
-await server1.register_functions([
-  { function_name: "add", function_block: add }
-]);
+const register_functions = [
+  {
+    function_name: "add",
+    function_block: add,
+  },
+];
 
-await server1.start();
+let config = {
+  port: 3000, // Load Server Running on this port
+  replicas: 3, // create this much replicas
+  register_functions: register_functions, // this are the function that will register on all replicas
+  basePort: 9000, // base port of replica ports
+};
 
-// create 3 replicas for load balancing
-await server1.createReplicas({ replicas: 3, basePort: 8000 });
+let loadServer = new ndk_load_balancer(config);
+loadserver.start();
 ```
 
-### 2️⃣ Another Server
+`Load Balancer Server 2`
 
 ```js
-import ndk_rpc_server from "ndk-rpc-engine";
-
-let server2 = new ndk_rpc_server({ port: 5000 });
+import ndk_load_balancer from "../index.mjs";
 
 const sub = ({ a, b }) => a - b;
 
-await server2.register_functions([
-  { function_name: "sub", function_block: sub }
-]);
+const register_functions = [
+  {
+    function_name: "sub",
+    function_block: sub,
+  },
+];
 
-await server2.start();
-await server2.createReplicas({ replicas: 2, basePort: 6000 });
+let config = {
+  port: 4000,
+  replicas: 2,
+  register_functions: register_functions,
+  basePort: 8000,
+};
+
+let loadServer = new ndk_load_balancer(config);
+loadserver.start();
 ```
 
-### 3️⃣ Global Registry
+2. Create a Global Registry
 
 ```js
-import GlobalRegister from "ndk-rpc-engine";
+import GlobalRegister from "../index.mjs";
 
-const globalRegister = new GlobalRegister({
-  registryPort: 3331,
-  createMiddleware: true // auto middleware for clients
-});
+let config = {
+  createMiddleware: true, // by default createMiddleware will be true , if false then manuallu u need to start the middleServer ( Recommended )
+};
+
+const globalRegister = new GlobalRegister();
 
 await globalRegister.registerKeys({
-  AddService: { host: "localhost", port: 4000 },
-  SubService: { host: "localhost", port: 5000 }
+  AddService: {
+    // here Enter That key , that is enter by Client (example here AddService and SubService)
+    host: "localhost", // here enter Load Server's Host
+    port: 3000, // here enter Load Server's Port
+  },
+  SubService: {
+    host: "localhost",
+    port: 4000,
+  },
 });
 
 await globalRegister.start();
 ```
 
-### 4️⃣ Client
+3. Now All Set U Just Need To Create the Client
 
 ```js
-import { Client } from "ndk-rpc-engine";
+import { Client } from "../index.mjs";
 
 const client = new Client();
 
 const response = await client.request({
-  method: "sub",
-  params: { a: 5, b: 2 },
-  key: "SubService"
+  method: "add",
+  params: { a: 5, b: 2 }, // pass input in objects
+  key: "AddService", // key which we enter in Global Registry
 });
 
 console.log("Response from server to Client : ", response);
 ```
 
----
+## Important Note
 
-## 📊 Example Output
-
-### Registry Logs
-
-```text
-[INFO 2025-09-11T12:51:33.092Z] Incoming request to Global Registry → { key: "SubService", method: "sub", params: { "a": 5, "b": 2 } }
-[SUCCESS 2025-09-11T12:51:33.093Z] Key found in Global Registry → { key: "SubService", server: { host: "localhost", port: 5000 } }
-[SUCCESS 2025-09-11T12:51:33.093Z] Received response from Registry → { status: 200 }
-```
-
-### Client Response
-
-```text
-Response from server to Client :  
-{ message: 'Method executed successfully', data: { method: 'sub', result: 3 } }
-```
-
-### Server & Replicas
-
-```text
-   Server is running at: http://localhost:4000
-   Accessible at: http://192.168.0.102:4000
-📡 Ready to accept Load Balancer requests...
-
-3 replicas created
-   Replica Server is running at: http://localhost:8000
-📡 Ready to accept RPC requests...
-   Replica Server is running at: http://localhost:8001
-📡 Ready to accept RPC requests...
-   Replica Server is running at: http://localhost:8002
-📡 Ready to accept RPC requests...
-```
+- Global Registry `Only Can Created Of One Instance` Do Not Try to create multiple Instance it will throw the error
+- Global Registry Will Run on Port `3331`
+- MiddleServer Will Run on Port `4132`

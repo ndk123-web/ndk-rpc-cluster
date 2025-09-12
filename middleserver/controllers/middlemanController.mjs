@@ -63,6 +63,7 @@ const MiddlemanController = async (req, res) => {
         });
 
         logSuccess("Received response from Registry", { status: registryResponse.status });
+        // console.log("Registry Response: ", registryResponse)
         jsonresponse = await registryResponse.json();
 
     } catch (err) {
@@ -82,7 +83,8 @@ const MiddlemanController = async (req, res) => {
 
     let jsonresponsee;
     try {
-        const serverResponse = await fetch(`http://${host}:${port}/api/v1/rpc/run-rpc-method`, {
+        // here host and port of load balancer is used
+        const serverResponse = await fetch(`http://${host}:${port}/api/v1/ndk-load-balancer/forward-requests`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ method, params }),

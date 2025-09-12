@@ -35,13 +35,13 @@ class ndk_rpc_server {
   rpc_methods = [];
   replicaPorts = [];
   static printTextCount = 0;
+  static bannerText = false;
   static availablePorts = [];
   replicas = 0;
 
   constructor(port_obj) {
-    let { port, isReplica = false, replicas: replicaCount = 1 } = port_obj;
+    let { port, count } = port_obj;
     this.port = port || 3000;
-    this.isReplica = isReplica;
     this.app = express();
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
@@ -77,37 +77,29 @@ class ndk_rpc_server {
   }
 
   async start() {
-    this.app.listen(this.port, () => {
-      if (this.isReplica) {
-        ndk_rpc_server.printTextCount++;
-        if (ndk_rpc_server.printTextCount === 1) {
-          console.log(chalk.green(`${this.replicas} replicas created`))
-        }
+    return new Promise(res => {
+      this.app.listen(this.port, () => {
         console.log(
-          chalk.green("   Replica Server is running at: ") +
+          chalk.green("📦 Replica Server is running at: ") +
           chalk.yellowBright.bold(`http://localhost:${this.port}`)
         );
-        console.log(chalk.cyanBright("📡 Ready to accept RPC requests..."));
-      } else {
-        console.log(
-          chalk.magenta(figlet.textSync("NDK-Load-Balancer", { horizontalLayout: "full" }))
-        );
-        console.log(
-          chalk.greenBright("   Server is running at: ") +
-          chalk.yellowBright.bold(`http://localhost:${this.port}`)
-        );
-        const localIps = getAllIPv4();
-        for (let ipObj of localIps) {
-          console.log(
-            chalk.greenBright("   Accessible at: ") +
-            chalk.yellowBright.bold(`http://${ipObj.address}:${this.port}`)
-          );
+        // ndk_rpc_server.printTextCount = ndk_rpc_server.printTextCount + 1;
+        if (this.count === 1) {
+          // Pehli baar hi ye chalega
+          console.log(chalk.cyanBright("📡 Ready to accept RPC requests..."));
+          const localIps = getAllIPv4();
+          // for (let ipObj of localIps) {
+          //   console.log(
+          //     chalk.greenBright("   Accessible at: ") +
+          //     chalk.yellowBright.bold(`http://${ipObj.address}:${this.port}`)
+          //   );
+          // }
+          console.log(); // newline
+          // ndk_rpc_server.bannerPrinted = true; // mark as printed
         }
-        console.log(chalk.cyanBright("📡 Ready to accept Load Balancer requests..."));
-        console.log() // new line
-        return true
-      }
-    });
+        res()
+      });
+    })
   }
 
   async register_functions(objs) {
