@@ -17,7 +17,7 @@
 `Load Balancer Server 1`
 
 ```js
-import ndk_load_balancer from "../index.mjs";
+import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
 
 const add = ({ a, b }) => a + b;
 
@@ -42,7 +42,7 @@ loadserver.start();
 `Load Balancer Server 2`
 
 ```js
-import ndk_load_balancer from "../index.mjs";
+import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
 
 const sub = ({ a, b }) => a - b;
 
@@ -67,7 +67,7 @@ loadserver.start();
 2. Create a Global Registry
 
 ```js
-import GlobalRegister from "../index.mjs";
+import GlobalRegister from "ndk-rpc-cluster/registry";
 
 let config = {
   createMiddleware: true, // by default createMiddleware will be true , if false then manuallu u need to start the middleServer ( Recommended )
@@ -93,7 +93,7 @@ await globalRegister.start();
 3. Now All Set U Just Need To Create the Client
 
 ```js
-import { Client } from "../index.mjs";
+import { Client } from "ndk-rpc-cluster/client";
 
 const client = new Client();
 
