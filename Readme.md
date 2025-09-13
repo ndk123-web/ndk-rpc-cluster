@@ -170,7 +170,7 @@ await registry.start();
 
 ```javascript
 // client.js - Client Usage
-import Client from "ndk-rpc-cluster/client";
+import { Client } from "ndk-rpc-cluster/client";
 
 const client = new Client();
 
