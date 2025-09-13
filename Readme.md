@@ -25,65 +25,78 @@ npm install ndk-rpc-cluster
 
 ![NDK-RPC-Cluster Architecture](./public/Architecture.png)
 
-```
-Client → Registry → Middleware → Load Balancer → Replicas (Servers)
-```
-
 ## 🚀 Quick Start
 
 ### 1. Create Load Balancer with Replicas
 
+`Load Balancer 1`
+
 ```javascript
-import LoadBalancer from "ndk-rpc-cluster/loadBalancer";
+import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
 
-// Define your functions
-const add = ({ a, b }) => a + b;
-const multiply = ({ a, b }) => a * b;
-
-// Register functions that will be available on all replicas
-// Each function must follow this exact schema:
-const functions = [
-  { function_name: "add", function_block: add },
-  { function_name: "multiply", function_block: multiply },
+let registerFns = [
+  {
+    function_name: "add",
+    function_block: ({ a, b }) => a + b,
+  },
 ];
 
-// Load balancer configuration
-const config = {
-  port: 3000, // Load balancer port
-  replicas: 3, // Number of replica servers
-  register_functions: functions,
-  basePort: 9000, // Starting port for replicas (9000, 9001, 9002)
+let config = {
+  basePort: 5000, // base port of replica ports
+  replicas: 3, // replicas want to create
+  port: 3000, // port of load balancer
+  register_functions: registerFns, // function to register on replicas
 };
 
-const loadBalancer = new LoadBalancer(config);
-loadBalancer.start();
+const lb = new ndk_load_balancer(config);
+await lb.start(); // start the load balancer server
+```
+
+`Load Balancer 2`
+
+```javascript
+import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
+
+let registerFns = [
+  {
+    function_name: "sub",
+    function_block: ({ a, b }) => a - b,
+  },
+];
+
+let config = {
+  basePort: 6000, // base port of replica ports
+  replicas: 3, // replicas want to create
+  port: 4000, // port of load balancer
+  register_functions: registerFns, // function to register on replicas
+};
+
+const lb = new ndk_load_balancer(config);
+await lb.start(); // start the load balancer server
 ```
 
 ### 2. Setup Global Registry
 
 ```javascript
-import GlobalRegistry from "ndk-rpc-cluster/registry";
+import GlobalRegister from "ndk-rpc-cluster/registry";
 
-const registry = new GlobalRegistry({
-  createMiddleware: true, // Auto-create middleware server
+const global = new GlobalRegister({
+  createMiddleware: true, // it must true , it will create middle server
 });
 
-//  must follow this exact schema:
-const keys = {
+let keys = {
   AddService: {
-    host: "localhost", // host of Load Server
-    port: 3000, // port of Load Server
+    host: "localhost", // load balancer host
+    port: 3000, // load balancer port
   },
   SubService: {
-    host: "localhost", // host of Load Server
-    port: 4000, // host of Load Port
+    host: "localhost", // load balancer host
+    port: 4000, // load balancer port
   },
 };
 
-// Register your services
-await registry.registerKeys(keys);
-
-await registry.start();
+global.registerKeys(keys);
+await global.start(); // start the global registry + middle server
 // Registry runs on port 3331, Middleware on port 4132
 ```
 
@@ -94,14 +107,16 @@ import { Client } from "ndk-rpc-cluster/client";
 
 const client = new Client();
 
-// Make RPC calls
 const response = await client.request({
-  method: "add",
-  params: { a: 10, b: 5 },
-  key: "MathService", // Service key from registry
+  method: "add", // method name to run
+  params: {    // parameters to pass else {}
+    a: 2,
+    b: 3,
+  },
+  key: "AddService", // key of service that we declare in Global Registry
 });
 
-console.log("Result:", response.result); // Output: 15
+console.log("Res: ", response);
 ```
 
 ## 📋 Complete Example
@@ -110,7 +125,7 @@ Here's a full working example:
 
 ```javascript
 // server.js - Load Balancer Setup
-import LoadBalancer from "ndk-rpc-cluster/loadBalancer";
+import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
 
 const mathFunctions = [
   {
@@ -127,7 +142,7 @@ const mathFunctions = [
   },
 ];
 
-const mathService = new LoadBalancer({
+const mathService = new ndk_load_balancer({
   port: 3000,
   replicas: 3,
   register_functions: mathFunctions,
@@ -139,9 +154,9 @@ mathService.start();
 
 ```javascript
 // registry.js - Service Registry
-import GlobalRegistry from "ndk-rpc-cluster/registry";
+import GlobalRegister from "ndk-rpc-cluster/registry";
 
-const registry = new GlobalRegistry();
+const registry = new GlobalRegister();
 
 await registry.registerKeys({
   MathService: {
@@ -155,7 +170,7 @@ await registry.start();
 
 ```javascript
 // client.js - Client Usage
-import { Client } from "ndk-rpc-cluster/client";
+import Client from "ndk-rpc-cluster/client";
 
 const client = new Client();
 
