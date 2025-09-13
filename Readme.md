@@ -1,4 +1,4 @@
-# NDK-RPC-Cluster
+ # NDK-RPC-Cluster
 
 [![npm version](https://badge.fury.io/js/ndk-rpc-cluster.svg)](https://badge.fury.io/js/ndk-rpc-cluster)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -23,11 +23,7 @@ npm install ndk-rpc-cluster
 
 ## 🏗️ Architecture
 
-![NDK-RPC-Cluster Architecture](./public/Architecture.png)
-
-```
-Client → Registry → Middleware → Load Balancer → Replicas (Servers)
-```
+![NDK-RPC-Cluster Architecture](./public/Architecture.png)
 
 ## 🚀 Quick Start
 
