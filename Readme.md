@@ -41,8 +41,7 @@ let registerFns = [
   },
 ];
 
-let config = {
-  basePort: 5000, // base port of replica ports
+let config = {
   replicas: 3, // replicas want to create
   port: 3000, // port of load balancer
   register_functions: registerFns, // function to register on replicas
@@ -64,8 +63,7 @@ let registerFns = [
   },
 ];
 
-let config = {
-  basePort: 6000, // base port of replica ports
+let config = {
   replicas: 3, // replicas want to create
   port: 4000, // port of load balancer
   register_functions: registerFns, // function to register on replicas
@@ -145,8 +143,7 @@ const mathFunctions = [
 const mathService = new ndk_load_balancer({
   port: 3000,
   replicas: 3,
-  register_functions: mathFunctions,
-  basePort: 9000,
+  register_functions: mathFunctions,
 });
 
 mathService.start();
