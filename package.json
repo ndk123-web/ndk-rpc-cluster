@@ -1,6 +1,6 @@
 {
   "name": "ndk-rpc-cluster",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Enterprise-grade RPC cluster system with load balancing, fault tolerance, service discovery and automatic failover support",
   "type": "module",
   "main": "./index.mjs",
@@ -8,7 +8,7 @@
     ".": "./index.mjs",
     "./client": "./client/index.mjs",
     "./server": "./server/index.mjs",
-    "./loadBalancer": "./loadBalancer/index.mjs", 
+    "./loadBalancer": "./loadBalancer/index.mjs",
     "./registry": "./registry/index.mjs",
     "./middleware": "./middleserver/index.mjs",
     "./utils/ApiError": "./utils/ApiError.js",
