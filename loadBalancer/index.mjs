@@ -35,7 +35,7 @@ class ndk_load_balancer {
   requestCounts = 0;
   static availablePort = [];
 
-  static THREASHOLD = 200;
+  static THREASHOLD = 2000;
   static MINREPLICAS = 2;
   static MAXREPLICAS = 10;
 
