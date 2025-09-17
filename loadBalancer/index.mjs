@@ -31,12 +31,30 @@ class ndk_load_balancer {
   app = "";
   count = 1;
   replicaPorts = [];
+  replicaDetails = [];
+  requestCounts = 0;
+  static availablePort = [];
 
-  constructor({ port, replicas, register_functions, basePort }) {
+  static THREASHOLD = 200;
+  static MINREPLICAS = 2;
+  static MAXREPLICAS = 10;
+
+  static getRandomPort() {
+    let min = 10000;
+    let max = 49151;
+    let port;
+
+    do {
+      port = Math.floor(Math.random() * (max - min + 1)) + min;
+    } while (ndk_load_balancer.availablePort.includes(port));
+
+    return port;
+  }
+
+  constructor({ port, replicas = 2, register_functions }) {
     this.port = port;
     this.replicas = replicas;
     this.register_functions = register_functions;
-    this.basePort = basePort;
 
     this.app = express();
     this.app.use(express.json());
@@ -58,6 +76,12 @@ class ndk_load_balancer {
         .status(500)
         .json(new ApiResponse(500, "Internal Server Error"));
     });
+
+    // to count the requests for each load balancer server
+    this.app.use((_, __, next) => {
+      this.requestCounts++;
+      next();
+    })
 
     // at least one server will run and we need to call internalyy by default for replicas
     // this.createReplicas({ replicas: replicaCount, basePort: 9000 })
@@ -90,13 +114,13 @@ class ndk_load_balancer {
         );
         console.log(
           chalk.greenBright("⚖️  Load Balancer Server is running at: ") +
-            chalk.yellowBright.bold(`http://localhost:${this.port}`)
+          chalk.yellowBright.bold(`http://localhost:${this.port}`)
         );
         const localIps = getAllIPv4();
         for (let ipObj of localIps) {
           console.log(
             chalk.greenBright("🌐 Accessible at: ") +
-              chalk.yellowBright.bold(`http://${ipObj.address}:${this.port}`)
+            chalk.yellowBright.bold(`http://${ipObj.address}:${this.port}`)
           );
         }
         console.log(
@@ -106,17 +130,27 @@ class ndk_load_balancer {
       });
 
       for (let i = 0; i < this.replicas; i++) {
+        let assignPort = ndk_load_balancer.getRandomPort();
+        while (ndk_load_balancer.availablePort.includes(assignPort)) {
+          assignPort = ndk_load_balancer.getRandomPort();
+        }
         let server = new ndk_rpc_server({
           count: this.count,
-          port: this.basePort + i,
+          port: assignPort,
         });
         await server.register_functions(this.register_functions);
-        await server.start();
+        const serverInstance = await server.start();
         this.count++;
-        this.replicaPorts.push(this.basePort + i);
+        this.replicaPorts.push(assignPort);
+        this.replicaDetails.push({ port: assignPort, server: serverInstance })
+        ndk_load_balancer.availablePort.push(assignPort);
       }
 
       console.log(); // for new line
+
+      // start the analyseServer
+      await this.analyseRequests();
+
       // console.log(chalk.greenBright("📦 Load Balancer Server is running at: ") + chalk.yellowBright.bold(`http://localhost:${this.port}`))
     } catch (err) {
       console.log(chalk.red("Error: ") + err.message);
@@ -124,6 +158,86 @@ class ndk_load_balancer {
     }
     return true;
   }
+
+  async analyseRequests() {
+    setInterval(async () => {
+      const totalRequetsPerReplica = Math.round(this.requestCounts / this.replicaPorts.length)
+      if (totalRequetsPerReplica > ndk_load_balancer.THREASHOLD && this.replicaPorts.length < ndk_load_balancer.MAXREPLICAS) {
+        console.log(chalk.greenBright("Load Increasing adding one more replica " + `Total Req: ${this.requestCounts}`))
+        await this.createReplica();
+      } else if (totalRequetsPerReplica < ndk_load_balancer.THREASHOLD && this.replicaPorts.length > ndk_load_balancer.MINREPLICAS) {
+        console.log(chalk.greenBright("Load Decreasing removing one replica " + `Total Req: ${this.requestCounts}`))
+        await this.removeReplica();
+      } else {
+        this.requestCounts = 0;
+      }
+    }, 10000)
+  }
+
+  async createReplica() {
+    try {
+      let assignPort = ndk_load_balancer.getRandomPort();
+      while (ndk_load_balancer.availablePort.includes(assignPort)) {
+        assignPort = ndk_load_balancer.getRandomPort();
+      }
+      let server = new ndk_rpc_server({
+        count: this.count,
+        port: assignPort,
+      });
+      await server.register_functions(this.register_functions);
+      const serverInstance = await server.start();
+      this.count++;
+      this.replicaPorts.push(assignPort);
+      this.replicaDetails.push({ port: assignPort, server: serverInstance })
+      ndk_load_balancer.availablePort.push(assignPort);
+      // console.log(chalk.greenBright("New Replica Created: ") + chalk.yellowBright.bold(assignPort))
+
+      // console.log("Total Replicas: ")
+      this.replicaPorts.forEach(port => {
+        console.log(chalk.yellow("Currently Running Replicas: ") + "http://localhost:" + chalk.yellowBright.bold(port))
+      })
+      this.requestCounts = 0;
+    }
+    catch (err) {
+      console.log("Err: ", err.message)
+    }
+  }
+
+  async removeReplica() {
+    try {
+      let toRemovePort = this.replicaPorts[0];
+
+      // Find the object { port, server }
+      let replicaObj = this.replicaDetails.find(obj => obj.port === toRemovePort);
+      if (!replicaObj) {
+        console.log(chalk.red(`Replica with port ${toRemovePort} not found`));
+        return;
+      }
+
+      // Close the server safely
+      await new Promise((resolve, reject) => {
+        replicaObj.server.close(err => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+
+      // Remove from arrays
+      this.replicaPorts = this.replicaPorts.filter(p => p !== toRemovePort);
+      this.replicaDetails = this.replicaDetails.filter(obj => obj.port !== toRemovePort);
+      ndk_load_balancer.availablePort = ndk_load_balancer.availablePort.filter(p => p !== toRemovePort);
+
+      console.log(chalk.greenBright("Replica Removed: ") + chalk.yellowBright.bold(toRemovePort));
+
+      this.replicaPorts.forEach(port => {
+        console.log(chalk.yellow("Currently Running Replicas: ") + "http://localhost:" + chalk.yellowBright.bold(port));
+      });
+
+    } catch (err) {
+      console.log(chalk.red("Error: ") + err.message);
+    }
+  }
+
 }
 
 export default ndk_load_balancer;

@@ -78,7 +78,7 @@ class ndk_rpc_server {
 
   async start() {
     return new Promise(res => {
-      this.app.listen(this.port, () => {
+      const server = this.app.listen(this.port, () => {
         console.log(
           chalk.green("📦 Replica Server is running at: ") +
           chalk.yellowBright.bold(`http://localhost:${this.port}`)
@@ -97,7 +97,7 @@ class ndk_rpc_server {
           console.log(); // newline
           // ndk_rpc_server.bannerPrinted = true; // mark as printed
         }
-        res()
+        res(server)
       });
     })
   }

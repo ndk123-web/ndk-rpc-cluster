@@ -1,6 +1,6 @@
 {
   "name": "ndk-rpc-cluster",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Enterprise-grade RPC cluster system with load balancing, fault tolerance, service discovery and automatic failover support",
   "type": "module",
   "main": "./index.mjs",
