@@ -8,7 +8,8 @@
 
 ## 🚀 Features
 
-- **🔄 Auto Replica Creation** - Automatic Replica Creation if in 10 seconds more than 2000 req came with respect to number of replicas
+- **🔄 Auto Replica Creation** - Automatic Replica Creation if in 10 seconds more than threashold req came with respect to number of replicas
+- **⚡ Threashold** - You can manually set threashold , default is 2000
 - **🔄 Load Balancing** - Round-robin distribution across replicas
 - **⚡ Fault Tolerance** - Automatic retry mechanisms and failover
 - **🔍 Service Discovery** - Global registry for service management
@@ -46,6 +47,7 @@ let config = {
   replicas: 3, // replicas want to create
   port: 3000, // port of load balancer
   register_functions: registerFns, // function to register on replicas
+  threashold: 30000 // it means if req reach 30,000 then creates new replica
 };
 
 const lb = new ndk_load_balancer(config);
@@ -68,6 +70,7 @@ let config = {
   replicas: 3, // replicas want to create
   port: 4000, // port of load balancer
   register_functions: registerFns, // function to register on replicas
+  threashold: 50000, // it means if req reach 50,000 then creates new replica
 };
 
 const lb = new ndk_load_balancer(config);

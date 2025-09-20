@@ -51,10 +51,11 @@ class ndk_load_balancer {
     return port;
   }
 
-  constructor({ port, replicas = 2, register_functions }) {
+  constructor({ port, replicas = 2, register_functions , threashold = 2000 }) {
     this.port = port;
     this.replicas = replicas;
     this.register_functions = register_functions;
+    this.threashold = threashold;
 
     this.app = express();
     this.app.use(express.json());
