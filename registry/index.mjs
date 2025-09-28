@@ -70,7 +70,7 @@ class GlobalRegister {
                 return new ApiResponse(2000, "Key should not be empty");
             }
 
-            let { host, port } = value;
+            let { host, port, protocol, portRequired = true } = value;
             if (host === "" || host === undefined || host === null) {
                 return new ApiResponse(201, "Default Host is Provideing 'localhost'");
             }
@@ -83,7 +83,7 @@ class GlobalRegister {
                 return new ApiResponse(203, "Key already exists");
             }
 
-            this.globalRegistry[key] = { host, port };
+            this.globalRegistry[key] = { host, port, protocol, portRequired };
         }
         return new ApiResponse(200, "Services registered successfully", this.globalRegistry);
     }

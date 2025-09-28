@@ -8,8 +8,10 @@
 
 ## 🚀 Features
 
-- **🔄 Auto Replica Creation** - Automatic Replica Creation if in 10 seconds more than threashold req came with respect to number of replicas
-- **⚡ Threashold** - You can manually set threashold , default is 2000
+- **🔄 Auto Replica Creation** - Automatic Replica Creation if in 10 seconds more than threshold requests are received with respect to number of replicas
+- **⚡ Custom Threshold** - Configure request threshold for auto-scaling (default: 2000)
+- **🌐 Protocol Support** - Support for both HTTP and HTTPS protocols
+- **🔌 Port Configuration** - Flexible port management with `portRequired` option
 - **🔄 Load Balancing** - Round-robin distribution across replicas
 - **⚡ Fault Tolerance** - Automatic retry mechanisms and failover
 - **🔍 Service Discovery** - Global registry for service management
@@ -21,7 +23,18 @@
 
 ```bash
 npm install ndk-rpc-cluster
+# or
+yarn add ndk-rpc-cluster
+# or
+pnpm add ndk-rpc-cluster
 ```
+
+## 🔄 Recent Updates
+
+- Added support for custom protocols (HTTP/HTTPS)
+- Added `portRequired` option for flexible URL generation
+- Improved error handling and logging
+- Enhanced configuration options for better control
 
 ## 🏗️ Architecture
 
@@ -90,10 +103,14 @@ let keys = {
   AddService: {
     host: "localhost", // load balancer host
     port: 3000, // load balancer port
+    protocol: "http", // http or https
+    portRequired: true // include port in service URL (default: true)
   },
   SubService: {
     host: "localhost", // load balancer host
     port: 4000, // load balancer port
+    protocol: "http", // http or https
+    portRequired: false // service will be accessed without port in URL
   },
 };
 
@@ -122,85 +139,6 @@ const response = await client.request({
 console.log("Res: ", response);
 ```
 
-## 📋 Complete Example
-
-Here's a full working example:
-
-```javascript
-// server.js - Load Balancer Setup
-import ndk_load_balancer from "ndk-rpc-cluster/loadBalancer";
-
-const mathFunctions = [
-  {
-    function_name: "add",
-    function_block: ({ a, b }) => a + b,
-  },
-  {
-    function_name: "subtract",
-    function_block: ({ a, b }) => a - b,
-  },
-  {
-    function_name: "multiply",
-    function_block: ({ a, b }) => a * b,
-  },
-];
-
-const mathService = new ndk_load_balancer({
-  port: 3000,
-  replicas: 3,
-  register_functions: mathFunctions,
-});
-
-mathService.start();
-```
-
-```javascript
-// registry.js - Service Registry
-import GlobalRegister from "ndk-rpc-cluster/registry";
-
-const registry = new GlobalRegister();
-
-await registry.registerKeys({
-  MathService: {
-    host: "localhost",
-    port: 3000,
-  },
-});
-
-await registry.start();
-```
-
-```javascript
-// client.js - Client Usage
-import { Client } from "ndk-rpc-cluster/client";
-
-const client = new Client();
-
-async function performCalculations() {
-  try {
-    // Addition
-    const sum = await client.request({
-      method: "add",
-      params: { a: 15, b: 25 },
-      key: "MathService",
-    });
-    console.log("Sum:", sum.data.result); // 40
-
-    // Multiplication
-    const product = await client.request({
-      method: "multiply",
-      params: { a: 6, b: 7 },
-      key: "MathService",
-    });
-    console.log("Product:", product.data.result); // 42
-  } catch (error) {
-    console.error("Error:", error.message);
-  }
-}
-
-performCalculations();
-```
-
 ## 🛠️ Configuration
 
 ### Load Balancer Options
@@ -210,6 +148,8 @@ performCalculations();
 | `port`               | number | -       | Load balancer server port         |
 | `replicas`           | number | -       | Number of replica servers         |
 | `basePort`           | number | -       | Starting port for replicas        |
+| `protocol`           | string | "http"  | Protocol to use (http/https)      |
+| `portRequired`       | boolean| true    | Whether to include port in URLs   |
 | `register_functions` | array  | -       | Functions to register on replicas |
 
 ### Registry Options

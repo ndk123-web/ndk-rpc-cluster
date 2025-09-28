@@ -71,7 +71,7 @@ const MiddlemanController = async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Registry request failed"));
     }
 
-    const { host, port, method, params } = jsonresponse.data || {};
+    const { host, port, method, params, protocol, portRequired  } = jsonresponse.data || {};
     if (!host || !port) {
         logError("Registry returned invalid server info", jsonresponse);
         return res.status(500).json(new ApiResponse(500, "Invalid server info from registry"));
@@ -84,16 +84,33 @@ const MiddlemanController = async (req, res) => {
     let jsonresponsee;
     try {
         // here host and port of load balancer is used
-        const serverResponse = await fetch(`http://${host}:${port}/api/v1/ndk-load-balancer/forward-requests`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ method, params }),
-        });
+        let serverResponse
+        // console.log("portRequired: ", portRequired)
+        // console.log("Host: ", host)
+        // console.log("Port: ", port)
+        // console.log("Protocol: ", protocol)
+        // console.log("Method: ", method)
+        // console.log("Params: ", params)
+        if (portRequired) {
+            serverResponse = await fetch(`${protocol}://${host}:${port}/api/v1/ndk-load-balancer/forward-requests`, {
+                method: "POST", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ method, params }),
+            });
+            jsonresponsee = await serverResponse.json();
+
+        } else {
+            serverResponse = await fetch(`${protocol}://${host}/api/v1/${method}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ method, params }),
+            });
+            jsonresponsee = await serverResponse.json();
+        }
 
         if (showLog) {
             logSuccess("Received response from Server", { status: serverResponse.status, host, port, method });
         }
-        jsonresponsee = await serverResponse.json();
     } catch (err) {
         if (showLog) {
             logError("Failed to fetch server response", { error: err.message });

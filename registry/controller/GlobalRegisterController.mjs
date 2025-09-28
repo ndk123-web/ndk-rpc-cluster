@@ -55,10 +55,13 @@ const GlobalRegisterController = async (req, res) => {
     for (const [objkey, objvalue] of Object.entries(globalRegistry)) {
         if (objkey === key) {
             logSuccess("Key found in Global Registry", { key, server: objvalue });
+            // console.log("Key found in Global Registry", { key, server: objvalue });
             return res.status(200).json(
                 new ApiResponse(200, "Method executed successfully", {
                     host: objvalue.host,
                     port: objvalue.port,
+                    protocol: objvalue.protocol ?? "http",
+                    portRequired: objvalue.portRequired ?? true,
                     method,
                     params
                 })

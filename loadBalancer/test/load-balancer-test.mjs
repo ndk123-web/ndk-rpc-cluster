@@ -9,5 +9,5 @@ const register_functions = [
     }
 ]
 
-let loadserver = new ndk_load_balancer({ port: 3000, replicas: 3, register_functions: register_functions, basePort: 9000 })
+let loadserver = new ndk_load_balancer({ port: 3000, replicas: 3, register_functions: register_functions })
 loadserver.start()
