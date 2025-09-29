@@ -72,9 +72,14 @@ const MiddlemanController = async (req, res) => {
     }
 
     const { host, port, method, params, protocol, portRequired  } = jsonresponse.data || {};
-    if (!host || !port) {
+    if (!host) {
         logError("Registry returned invalid server info", jsonresponse);
         return res.status(500).json(new ApiResponse(500, "Invalid server info from registry"));
+    }
+
+    if (portRequired && !port){
+        logError("Port Required but not provided by registry", jsonresponse);
+        return res.status(500).json(new ApiResponse(500, "Port required but not provided by registry"));
     }
 
     if (showLog) {
@@ -100,7 +105,7 @@ const MiddlemanController = async (req, res) => {
             jsonresponsee = await serverResponse.json();
 
         } else {
-            serverResponse = await fetch(`${protocol}://${host}/api/v1/${method}`, {
+            serverResponse = await fetch(`${protocol}://${host}/api/v1/ndk-load-balancer/forward-requests`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ method, params }),
